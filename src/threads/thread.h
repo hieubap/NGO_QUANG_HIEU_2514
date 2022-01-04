@@ -89,6 +89,14 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
+    int ticks_blocked;                  /* record the rest time of sleep time*/
+
+    /*priority donation*/
+    int old_priority;                   /* the priority when not donated*/
+    struct list locks;                  /* the list of the locks which the thread acquire*/
+    bool donated;                       /* whether the thread has been donated*/
+    struct lock* blocked;               /* point to the lock which block this thread*/
+
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -116,6 +124,7 @@ void thread_print_stats (void);
 typedef void thread_func (void *aux);
 tid_t thread_create (const char *name, int priority, thread_func *, void *);
 
+void blocked_thread_check(struct thread *t, void *aux UNUSED);
 void thread_block (void);
 void thread_unblock (struct thread *);
 
@@ -125,6 +134,7 @@ const char *thread_name (void);
 
 void thread_exit (void) NO_RETURN;
 void thread_yield (void);
+void unblock_yield(void);
 
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);
@@ -133,9 +143,15 @@ void thread_foreach (thread_action_func *, void *);
 int thread_get_priority (void);
 void thread_set_priority (int);
 
+/* priority compare function */
+bool compare_thread_priority (const struct list_elem *i,
+                              const struct list_elem *j,
+                              void  *aux);
+
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 #endif /* threads/thread.h */
+
